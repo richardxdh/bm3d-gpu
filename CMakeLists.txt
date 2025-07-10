@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+# cmake_policy(SET CMP0104 NEW)
+
 project(bm3d LANGUAGES CXX CUDA)
 
 include_directories(
@@ -8,6 +10,10 @@ include_directories(
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES "native")  # or "75;120"
+endif()
 
 # The following lines build the main executable.
 add_executable(bm3d
