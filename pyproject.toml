@@ -1,0 +1,14 @@
+[build-system]
+requires = ["scikit-build-core>=0.8.0", "pybind11", "numpy", "ninja"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "bm3d_gpu"
+version = "0.1.0"
+description = "Build python module based on the github repo: CUDA-accelerated implementation of BM3D image denoising method.(https://github.com/DawyD/bm3d-gpu)"
+authors = [{name = "Richard Xu", email = "richardxdh@gmail.com"}]
+requires-python = ">=3.8"
+dependencies = ["numpy"]
+
+[tool.scikit-build]
+wheel.packages = ["bm3d_gpu"]
