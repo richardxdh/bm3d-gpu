@@ -893,8 +893,8 @@ public:
 		//Copy back
 		copy_host_image(dst_image, width, height, channels);
 
-		//if(_verbose)
-		std::cout << "Total time: " << total.getSeconds() << std::endl;
+		if(_verbose)
+            std::cout << "Total time: " << total.getSeconds() << std::endl;
 	}
 
 	/*void denoise_device_image(uchar *src_image, uchar *dst_image, int width, int height, int channels, bool two_step)

@@ -58,10 +58,13 @@ int bm3d_denoise(
 		sigma2[2] = ((112l*112l*s + 94l*94l*s + 18l*18l*s) / (256l*256l));
 	}
 
-	std::cout << "Noise variance for individual channels (YCrCb if color): ";
-	for (unsigned int k = 0; k < sigma2.size(); k++)
-		std::cout << sigma2[k] << " ";
-	std::cout << std::endl;
+    if (verbose)
+    {
+        std::cout << "Noise variance for individual channels (YCrCb if color): ";
+        for (unsigned int k = 0; k < sigma2.size(); k++)
+            std::cout << sigma2[k] << " ";
+        std::cout << std::endl;
+    }
 
 	// Check for invalid input
 	if(! image.data() )							
@@ -106,7 +109,8 @@ int bm3d_denoise(
 	{
 		CImg<unsigned char> reference_image(ref, w, h, 1, channels, true);
         float psnr = reference_image.PSNR(image2);
-		std::cout << "PSNR:" << psnr << std::endl;
+        if (verbose)
+            std::cout << "PSNR:" << psnr << std::endl;
         *out_psnr = psnr;
 	}
 
