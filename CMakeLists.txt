@@ -7,19 +7,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 project(bm3d_gpu_project LANGUAGES CXX CUDA)
 
-# Undefine CImg macros to prevent dependency on external libraries
-# We modify the global flags here as a more forceful approach to ensure
-# the flags are passed correctly by the build system.
-if(MSVC)
-  # For C++ files (.cpp)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Ucimg_use_jpeg /Ucimg_use_png /Ucimg_display")
-  # For CUDA files (.cu)
-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler /Ucimg_use_jpeg -Xcompiler /Ucimg_use_png -Xcompiler /Ucimg_display")
-else()
-  # For other compilers (GCC, Clang)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ucimg_use_jpeg -Ucimg_use_png -Ucimg_display")
-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Ucimg_use_jpeg -Ucimg_use_png -Ucimg_display")
-endif()
+# Fix for pybind11 developer warning
+set(PYBIND11_FINDPYTHON ON)
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -31,7 +20,6 @@ endif()
 
 # ---------- Dependencies ----------
 find_package(CUDAToolkit REQUIRED)
-set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
 
 # ---------- Core static library ----------
@@ -45,12 +33,39 @@ target_include_directories(bm3d_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CUDAToolkit_INCLUDE_DIRS}
 )
+
+# Undefine CImg macros to prevent dependency on external libraries
+if(MSVC)
+  set(cxx_undef_flags "/Ucimg_use_jpeg" "/Ucimg_use_png" "/Ucimg_display")
+  # For nvcc, -Xcompiler and its argument must be passed as separate arguments
+  set(cuda_undef_flags 
+      "-Xcompiler" "/Ucimg_use_jpeg"
+      "-Xcompiler" "/Ucimg_use_png"
+      "-Xcompiler" "/Ucimg_display"
+  )
+else()
+  set(cxx_undef_flags "-Ucimg_use_jpeg" "-Ucimg_use_png" "-Ucimg_display")
+  set(cuda_undef_flags ${cxx_undef_flags}) # On Linux, nvcc accepts -U directly
+endif()
+
+target_compile_options(bm3d_core PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX>:${cxx_undef_flags}>
+    $<$<COMPILE_LANGUAGE:CUDA>:${cuda_undef_flags}>
+)
+
 target_link_libraries(bm3d_core PUBLIC cufft cudart)
 
 # ---------- Python module ----------
 pybind11_add_module(_bm3d_gpu_impl MODULE bm3d_pybind.cpp)
 target_link_libraries(_bm3d_gpu_impl PRIVATE bm3d_core)
+
+# Using both methods to be extra robust.
+# 1. Place the library in the source tree directly.
 set_target_properties(_bm3d_gpu_impl PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bm3d_gpu
     CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES}
 )
+
+# 2. Also provide a standard install rule for the packager.
+install(TARGETS _bm3d_gpu_impl
+        LIBRARY DESTINATION bm3d_gpu)
