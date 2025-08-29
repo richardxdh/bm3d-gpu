@@ -44,7 +44,7 @@ py::tuple denoise(py::array noisy,
     return py::make_tuple(dst, psnr);
 }
 
-PYBIND11_MODULE(bm3d_gpu, m){
+PYBIND11_MODULE(_bm3d_gpu_impl, m){
     m.doc() = "CUDA BM3D bindings (pybind11)";
     m.def("denoise", &denoise,
           "BM3D Image Denoising",

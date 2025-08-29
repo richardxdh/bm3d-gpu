@@ -1,67 +1,56 @@
-cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
-# cmake_policy(SET CMP0104 NEW)
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF) 
-
-if(CMAKE_GENERATOR STREQUAL "Ninja")
-    set_property(GLOBAL PROPERTY JOB_POOLS link_lto=8)
-    set(CMAKE_JOB_POOLS_LINK link_lto)
-endif()
-
-set(CMAKE_CXX_STANDARD 11)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
+# Use C++17 as required by modern CUDA/Thrust versions
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-project(bm3d LANGUAGES CXX CUDA)
+project(bm3d_gpu_project LANGUAGES CXX CUDA)
+
+# Undefine CImg macros to prevent dependency on external libraries
+# We modify the global flags here as a more forceful approach to ensure
+# the flags are passed correctly by the build system.
+if(MSVC)
+  # For C++ files (.cpp)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Ucimg_use_jpeg /Ucimg_use_png /Ucimg_display")
+  # For CUDA files (.cu)
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler /Ucimg_use_jpeg -Xcompiler /Ucimg_use_png -Xcompiler /Ucimg_display")
+else()
+  # For other compilers (GCC, Clang)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ucimg_use_jpeg -Ucimg_use_png -Ucimg_display")
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Ucimg_use_jpeg -Ucimg_use_png -Ucimg_display")
+endif()
 
 include_directories(
-	${CMAKE_CURRENT_SOURCE_DIR}/include
-	${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-    set(CMAKE_CUDA_ARCHITECTURES "native")  # or "75;120"
+    set(CMAKE_CUDA_ARCHITECTURES "native")
 endif()
 
-# ---------- 依赖 ----------
+# ---------- Dependencies ----------
+find_package(CUDAToolkit REQUIRED)
 set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
-enable_language(CUDA)
-find_package(CUDAToolkit REQUIRED)
 
-
-# The following lines build the main executable.
-add_executable(bm3d
-	include/CImg.h
-	include/stopwatch.hpp
-	include/indices.cuh
-	include/params.hpp
-	include/bm3d.hpp
-	src/filtering.cu
-	src/blockmatching.cu
-	src/dct8x8.cu
-	src/main_nodisplay.cpp
-)
-
-target_link_libraries(bm3d cufft cudart png)
-
-# ---------- Core 静态库 ----------
+# ---------- Core static library ----------
 add_library(bm3d_core STATIC
     src/bm3d_api.cpp
-	include/CImg.h
-	include/stopwatch.hpp
-	include/indices.cuh
-	include/params.hpp
-	include/bm3d.hpp
-	src/filtering.cu
-	src/blockmatching.cu
-	src/dct8x8.cu
+    src/filtering.cu
+    src/blockmatching.cu
+    src/dct8x8.cu
 )
-target_link_libraries(bm3d_core PUBLIC cudart cufft png)
+target_include_directories(bm3d_core PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CUDAToolkit_INCLUDE_DIRS}
+)
+target_link_libraries(bm3d_core PUBLIC cufft cudart)
 
-# ---------- Python 模块 ----------
-pybind11_add_module(bm3d_gpu MODULE bm3d_pybind.cpp)
-target_link_libraries(bm3d_gpu PRIVATE bm3d_core)
-set_target_properties(bm3d_gpu PROPERTIES
+# ---------- Python module ----------
+pybind11_add_module(_bm3d_gpu_impl MODULE bm3d_pybind.cpp)
+target_link_libraries(_bm3d_gpu_impl PRIVATE bm3d_core)
+set_target_properties(_bm3d_gpu_impl PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bm3d_gpu
-    CUDA_ARCHITECTURES "native"
+    CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES}
 )
