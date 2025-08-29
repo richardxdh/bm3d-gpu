@@ -48,7 +48,9 @@ echo ====================== step3: install python module =======================
 echo Uninstalling previous version...
 pip uninstall bm3d_gpu -y
 echo Installing new version...
-pip install dist/bm3d_gpu-0.1.0-*.whl
+for %%F in (dist\bm3d_gpu-0.1.0-*.whl) do (
+    pip install %%F
+)
 if %errorlevel% neq 0 (
     echo Installation failed.
     exit /b 1
