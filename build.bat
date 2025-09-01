@@ -9,8 +9,8 @@ echo This script will build and install the bm3d_gpu Python package.
 echo.
 echo Prerequisites:
 echo 1. Visual Studio 2019 or later with "Desktop development with C++" workload.
-echo 2. NVIDIA CUDA Toolkit (>=11.4). Make sure 'nvcc' is in your PATH.
-echo 3. Python (>=3.8).
+echo 2. NVIDIA CUDA Toolkit (^>=11.4). Make sure 'nvcc' is in your PATH.
+echo 3. Python (^>=3.8).
 echo.
 echo Make sure you are running this script from a command prompt with the
 echo correct environment set up (e.g., "x64 Native Tools Command Prompt for VS").
@@ -33,6 +33,10 @@ if exist build rmdir /s /q build
 if exist dist rmdir /s /q dist
 if exist bm3d_gpu.egg-info rmdir /s /q bm3d_gpu.egg-info
 del /q bm3d_gpu\*.pyd
+
+echo.
+echo ====================== step1.5: prepare build files ===========================
+copy /Y CMakeLists_wins.txt CMakeLists.txt
 echo.
 
 echo ====================== step2: build python module ===========================
@@ -42,6 +46,7 @@ if %errorlevel% neq 0 (
     echo Build failed.
     exit /b 1
 )
+del CMakeLists.txt
 echo.
 
 echo ====================== step3: install python module ===========================

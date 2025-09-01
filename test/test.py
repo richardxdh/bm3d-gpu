@@ -1,5 +1,5 @@
 # -*- coding: utf8 -*-
-
+import os
 from pathlib import Path
 import cv2
 import bm3d_gpu
@@ -29,6 +29,7 @@ def test_func(noisy_dir, denoised_dir):
             noisy_img, sigma=sigma, reference=ref_img
         )
 
+        os.makedirs(denoised_dir, exist_ok=True)
         denoised_path = denoised_dir / noisy_path.name
         cv2.imwrite(denoised_path, denoised_img)
 

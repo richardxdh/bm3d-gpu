@@ -11,12 +11,17 @@ echo ""
 echo "======================step1: remove cache============================"
 rm -rf build dist *.egg-info bm3d_gpu/*.so bm3d_gpu/*.pyd
 
+echo ""
+echo "======================step1.5: prepare build files========================"
+cp CMakeLists_Linux.txt CMakeLists.txt
+
 
 echo ""
 echo "======================step2: build python module============================"
 # The 'python -m build' command handles everything:
 # It calls cmake, builds the project, and creates the wheel.
 python -m build -w
+rm CMakeLists.txt
 
 
 echo ""
